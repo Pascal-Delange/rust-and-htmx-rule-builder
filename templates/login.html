@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Fraud Rule Builder</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 2rem;
+        }
+        .login-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 2rem;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .login-header h1 {
+            margin: 0 0 0.5rem 0;
+            color: #333;
+        }
+        .login-header p {
+            margin: 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .login-form .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .login-form label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+        .login-form input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        .login-form input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        .login-form button {
+            width: 100%;
+            padding: 0.75rem;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .login-form button:hover {
+            background: #45a049;
+        }
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .demo-note {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f0f8ff;
+            border-left: 4px solid #2196F3;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .demo-note strong {
+            color: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>🛡️ Fraud Rule Builder</h1>
+                <p>Please login to continue</p>
+            </div>
+
+            <div id="error-container">
+            </div>
+
+            <form class="login-form" 
+                  hx-post="/login" 
+                  hx-target="#error-container"
+                  hx-swap="innerHTML">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" 
+                           id="username" 
+                           name="username" 
+                           placeholder="Enter any username" 
+                           required 
+                           autofocus>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" 
+                           id="password" 
+                           name="password" 
+                           placeholder="Enter any password" 
+                           required>
+                </div>
+
+                <button type="submit">Login</button>
+            </form>
+
+            <div class="demo-note">
+                <strong>Demo Mode:</strong> Enter any username and password to login. 
+                Session expires after 10 minutes of inactivity.
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

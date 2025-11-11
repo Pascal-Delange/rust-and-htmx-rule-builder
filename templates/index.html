@@ -10,9 +10,12 @@
 </head>
 <body>
     <div class="container">
-        <header>
+        <header style="position: relative;">
             <h1>🛡️ Fraud Rule Builder</h1>
             <p class="subtitle">Build and manage fraud detection rules</p>
+            <form hx-post="/logout" style="position: absolute; top: 2rem; right: 2rem;">
+                <button type="submit" class="btn btn-secondary">Logout</button>
+            </form>
         </header>
 
         <main>

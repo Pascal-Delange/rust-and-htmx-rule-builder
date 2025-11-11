@@ -1,3 +1,4 @@
+use crate::auth::get_session_store;
 use crate::models::{Condition, Field, Operand, Operator, Rule, RuleStore};
 use askama::Template;
 use axum::{
@@ -458,6 +459,61 @@ pub async fn validate_rule() -> Response {
     } else {
         Html("<div>Rule not found</div>".to_string()).into_response()
     }
+}
+
+// ============================================================================
+// Auth Handlers
+// ============================================================================
+
+#[derive(Template)]
+#[template(path = "login.html")]
+struct LoginTemplate;
+
+pub async fn login_page() -> impl IntoResponse {
+    let template = LoginTemplate;
+    HtmlTemplate(template)
+}
+
+#[derive(Deserialize)]
+pub struct LoginForm {
+    username: String,
+    password: String,
+}
+
+pub async fn do_login(Form(form): Form<LoginForm>) -> Response {
+    // Fake auth - accept any non-empty username/password
+    if !form.username.is_empty() && !form.password.is_empty() {
+        // Create session
+        let store = get_session_store();
+        let session_id = store.create_session(form.username);
+
+        // Set cookie and redirect using HX-Redirect for HTMX
+        axum::response::Response::builder()
+            .status(200)
+            .header(
+                "Set-Cookie",
+                format!("session_id={}; Path=/; HttpOnly; SameSite=Lax", session_id),
+            )
+            .header("HX-Redirect", "/")
+            .body(axum::body::Body::empty())
+            .unwrap()
+    } else {
+        // Return error message
+        Html(r#"<div class="error">Please enter both username and password</div>"#).into_response()
+    }
+}
+
+pub async fn logout() -> Response {
+    // Clear cookie and redirect
+    axum::response::Response::builder()
+        .status(303)
+        .header(
+            "Set-Cookie",
+            "session_id=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0",
+        )
+        .header("Location", "/login")
+        .body(axum::body::Body::empty())
+        .unwrap()
 }
 
 // Helper for rendering Askama templates

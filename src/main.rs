@@ -1,7 +1,9 @@
+mod auth;
 mod handlers;
 mod models;
 
 use axum::{
+    middleware,
     routing::{get, post},
     Router,
 };
@@ -21,7 +23,7 @@ async fn main() {
         .init();
 
     // Build our application with routes
-    let app = Router::new()
+    let protected_routes = Router::new()
         .route("/", get(handlers::index))
         .route("/rule/conditions/new", get(handlers::new_condition_form))
         .route(
@@ -46,6 +48,16 @@ async fn main() {
             axum::routing::delete(handlers::delete_condition),
         )
         .route("/rule/validate", post(handlers::validate_rule))
+        .layer(middleware::from_fn(auth::auth_middleware));
+
+    let public_routes = Router::new()
+        .route("/login", get(handlers::login_page).post(handlers::do_login))
+        .layer(middleware::from_fn(auth::public_only_middleware));
+
+    let app = Router::new()
+        .merge(protected_routes)
+        .merge(public_routes)
+        .route("/logout", post(handlers::logout))
         .nest_service("/static", ServeDir::new("static"))
         .layer(TraceLayer::new_for_http());
 
