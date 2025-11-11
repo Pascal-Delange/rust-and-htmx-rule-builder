@@ -21,12 +21,6 @@
 
             <div class="form-group" id="right-side-group">
                 <label>Right Side</label>
-                <p class="hint" x-show="leftFieldType === 'number'" x-cloak style="font-size: 0.85em; color: #666; margin-bottom: 0.5rem;">
-                    💡 Tip: Use a number value or another numeric field
-                </p>
-                <p class="hint" x-show="leftFieldType === 'string'" x-cloak style="font-size: 0.85em; color: #666; margin-bottom: 0.5rem;">
-                    💡 Tip: Use a text value or another text field
-                </p>
                 {% set side = "right" %}
                 {% include "operand_selector.html" %}
             </div>
