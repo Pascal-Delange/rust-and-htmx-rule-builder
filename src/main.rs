@@ -25,7 +25,13 @@ async fn main() {
     // Build our application with routes
     let protected_routes = Router::new()
         .route("/", get(handlers::index))
-        .route("/rule/conditions/new", get(handlers::new_condition_form))
+        // Tree-based routes with paths
+        .route("/rule/node/:path/add-condition-form", get(handlers::new_condition_form))
+        .route("/rule/node/:path/add-condition", post(handlers::add_condition))
+        .route("/rule/node/:path/add-group", post(handlers::add_group))
+        .route("/rule/node/:path/operator", post(handlers::update_operator))
+        .route("/rule/node/:path", axum::routing::delete(handlers::delete_node))
+        // Dependent dropdown routes
         .route(
             "/rule/conditions/operators",
             get(handlers::get_operators_for_field),
@@ -41,11 +47,6 @@ async fn main() {
         .route(
             "/rule/conditions/operators-for-value",
             get(handlers::get_operators_for_value),
-        )
-        .route("/rule/conditions", post(handlers::add_condition))
-        .route(
-            "/rule/conditions/:condition_id",
-            axum::routing::delete(handlers::delete_condition),
         )
         .route("/rule/validate", post(handlers::validate_rule))
         .layer(middleware::from_fn(auth::auth_middleware));

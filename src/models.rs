@@ -129,13 +129,94 @@ impl Operand {
     }
 }
 
-/// A single condition in the rule
+/// A node in the condition tree - either a leaf (condition) or a group
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Condition {
-    pub id: Uuid,
-    pub left: Operand,
-    pub operator: Operator,
-    pub right: Operand,
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum ConditionNode {
+    Leaf {
+        id: Uuid,
+        left: Operand,
+        operator: Operator,
+        right: Operand,
+    },
+    Group {
+        id: Uuid,
+        operator: LogicalOperator,
+        children: Vec<ConditionNode>,
+    },
+}
+
+impl ConditionNode {
+    pub fn id(&self) -> Uuid {
+        match self {
+            ConditionNode::Leaf { id, .. } => *id,
+            ConditionNode::Group { id, .. } => *id,
+        }
+    }
+
+    pub fn is_leaf(&self) -> bool {
+        matches!(self, ConditionNode::Leaf { .. })
+    }
+
+    pub fn is_group(&self) -> bool {
+        matches!(self, ConditionNode::Group { .. })
+    }
+
+    /// Navigate to a node at the given path
+    pub fn get_at_path(&self, path: &[usize]) -> Option<&ConditionNode> {
+        if path.is_empty() {
+            return Some(self);
+        }
+
+        match self {
+            ConditionNode::Group { children, .. } => children
+                .get(path[0])
+                .and_then(|child| child.get_at_path(&path[1..])),
+            ConditionNode::Leaf { .. } => None,
+        }
+    }
+
+    /// Navigate to a mutable node at the given path
+    pub fn get_at_path_mut(&mut self, path: &[usize]) -> Option<&mut ConditionNode> {
+        if path.is_empty() {
+            return Some(self);
+        }
+
+        match self {
+            ConditionNode::Group { children, .. } => children
+                .get_mut(path[0])
+                .and_then(|child| child.get_at_path_mut(&path[1..])),
+            ConditionNode::Leaf { .. } => None,
+        }
+    }
+
+    /// Add a child to a group at the given path
+    pub fn add_child_at_path(&mut self, path: &[usize], child: ConditionNode) -> bool {
+        if let Some(ConditionNode::Group { children, .. }) = self.get_at_path_mut(path) {
+            children.push(child);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Delete a node at the given path
+    pub fn delete_at_path(&mut self, path: &[usize]) -> bool {
+        if path.is_empty() {
+            return false; // Can't delete root
+        }
+
+        let parent_path = &path[..path.len() - 1];
+        let child_index = path[path.len() - 1];
+
+        if let Some(ConditionNode::Group { children, .. }) = self.get_at_path_mut(parent_path) {
+            if child_index < children.len() {
+                children.remove(child_index);
+                return true;
+            }
+        }
+        false
+    }
 }
 
 /// Logical operator for combining conditions
@@ -155,14 +236,13 @@ impl std::fmt::Display for LogicalOperator {
     }
 }
 
-/// The main rule structure - represents an AST
+/// The main rule structure - represents an AST with tree-based conditions
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Rule {
     pub id: Uuid,
     pub name: String,
     pub description: String,
-    pub conditions: Vec<Condition>,
-    pub logical_operator: LogicalOperator,
+    pub root: ConditionNode, // Tree structure
     pub action: String,
 }
 
@@ -172,8 +252,11 @@ impl Rule {
             id: Uuid::new_v4(),
             name,
             description,
-            conditions: Vec::new(),
-            logical_operator: LogicalOperator::And,
+            root: ConditionNode::Group {
+                id: Uuid::new_v4(),
+                operator: LogicalOperator::And,
+                children: Vec::new(),
+            },
             action: String::from("flag_for_review"),
         }
     }
@@ -186,24 +269,8 @@ impl Rule {
             errors.push("Rule name cannot be empty".to_string());
         }
 
-        if self.conditions.is_empty() {
-            errors.push("Rule must have at least one condition".to_string());
-        }
-
-        // Validate each condition
-        for condition in &self.conditions {
-            // Validate that value operands are not empty
-            if let Operand::Value { value } = &condition.right {
-                if value.is_empty() {
-                    errors.push("Condition value cannot be empty".to_string());
-                }
-            }
-            if let Operand::Value { value } = &condition.left {
-                if value.is_empty() {
-                    errors.push("Condition value cannot be empty".to_string());
-                }
-            }
-        }
+        // Validate the tree
+        self.validate_node(&self.root, &mut errors);
 
         if errors.is_empty() {
             Ok(())
@@ -211,6 +278,60 @@ impl Rule {
             Err(errors)
         }
     }
+
+    fn validate_node(&self, node: &ConditionNode, errors: &mut Vec<String>) {
+        match node {
+            ConditionNode::Leaf { left, right, .. } => {
+                // Validate that value operands are not empty
+                if let Operand::Value { value } = left {
+                    if value.is_empty() {
+                        errors.push("Condition value cannot be empty".to_string());
+                    }
+                }
+                if let Operand::Value { value } = right {
+                    if value.is_empty() {
+                        errors.push("Condition value cannot be empty".to_string());
+                    }
+                }
+            }
+            ConditionNode::Group { children, .. } => {
+                if children.is_empty() {
+                    errors.push("Group must have at least one condition".to_string());
+                }
+                // Recursively validate children
+                for child in children {
+                    self.validate_node(child, errors);
+                }
+            }
+        }
+    }
+}
+
+/// Parse a path string like "0-1-2" into indices [1, 2]
+/// The first "0" is always the root, so we skip it
+pub fn parse_path(path: &str) -> Vec<usize> {
+    if path == "0" {
+        return vec![];
+    }
+
+    path.split('-')
+        .skip(1) // Skip the root "0"
+        .filter_map(|s| s.parse().ok())
+        .collect()
+}
+
+/// Convert indices back to path string
+pub fn path_to_string(indices: &[usize]) -> String {
+    if indices.is_empty() {
+        return "0".to_string();
+    }
+
+    let mut result = String::from("0");
+    for idx in indices {
+        result.push('-');
+        result.push_str(&idx.to_string());
+    }
+    result
 }
 
 /// In-memory storage (in a real app, this would be a database)

@@ -2,27 +2,14 @@
     <div class="detail-header">
         <h2>{{ rule.name }}</h2>
         <p>{{ rule.description }}</p>
-        <button 
-            class="btn btn-small btn-primary"
-            hx-get="/rule/conditions/new"
-            hx-target="#condition-form-{{ rule_id }}"
-            hx-swap="innerHTML">
-            + Add Condition
-        </button>
     </div>
 
-    <div id="condition-form-{{ rule_id }}" class="condition-form-container"></div>
+    <div id="condition-form-container" class="condition-form-container"></div>
 
     <div class="conditions-section">
-        <h5>Conditions ({{ rule.logical_operator }})</h5>
-        <div id="conditions-list-{{ rule_id }}" class="conditions-list">
-            {% if rule.conditions.is_empty() %}
-            <p class="text-muted">No conditions yet. Add at least one condition to make this rule active.</p>
-            {% else %}
-            {% for condition in rule.conditions %}
-            {% include "condition_row.html" %}
-            {% endfor %}
-            {% endif %}
+        <h5>Rule Tree</h5>
+        <div id="rule-tree" class="rule-tree">
+            {{ tree_html|safe }}
         </div>
     </div>
 
