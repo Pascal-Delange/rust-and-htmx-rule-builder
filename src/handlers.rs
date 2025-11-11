@@ -504,14 +504,14 @@ pub async fn do_login(Form(form): Form<LoginForm>) -> Response {
 }
 
 pub async fn logout() -> Response {
-    // Clear cookie and redirect
+    // Clear cookie and redirect using HX-Redirect for HTMX
     axum::response::Response::builder()
-        .status(303)
+        .status(200)
         .header(
             "Set-Cookie",
             "session_id=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0",
         )
-        .header("Location", "/login")
+        .header("HX-Redirect", "/login")
         .body(axum::body::Body::empty())
         .unwrap()
 }
