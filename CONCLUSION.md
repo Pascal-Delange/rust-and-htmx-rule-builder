@@ -1,3 +1,7 @@
+# Disclaimer
+
+Below is just a recap of my cursor history working on this POC. None of it written manually.
+
 # HTMX Fraud Rule Builder - Conclusion
 
 ## Project Overview
