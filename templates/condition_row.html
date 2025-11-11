@@ -1,8 +1,8 @@
 <div class="condition-row" id="condition-{{ condition.id }}">
     <div class="condition-content">
-        <span class="condition-field">{{ condition.field.display_name() }}</span>
+        <span class="condition-field">{{ condition.left.display() }}</span>
         <span class="condition-operator">{{ condition.operator.display_name() }}</span>
-        <span class="condition-value">"{{ condition.value }}"</span>
+        <span class="condition-value">{{ condition.right.display() }}</span>
     </div>
     <button 
         class="btn-delete"

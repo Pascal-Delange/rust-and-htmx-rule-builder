@@ -1,4 +1,4 @@
-use crate::models::{Condition, Field, Operator, Rule, RuleStore};
+use crate::models::{Condition, Field, Operand, Operator, Rule, RuleStore};
 use askama::Template;
 use axum::{
     extract::Path,
@@ -74,23 +74,50 @@ pub async fn new_condition_form() -> impl IntoResponse {
 
 #[derive(Deserialize)]
 pub struct AddConditionForm {
-    field: String,
+    left_type: String,
+    left_field: Option<String>,
+    left_value: Option<String>,
     operator: String,
-    value: String,
+    right_type: String,
+    right_field: Option<String>,
+    right_value: Option<String>,
 }
 
 pub async fn add_condition(Form(form): Form<AddConditionForm>) -> Response {
     let store = get_store();
 
     if let Some(mut rule) = store.get_rule() {
-        let field: Field = serde_json::from_str(&format!("\"{}\"", form.field)).unwrap();
         let operator: Operator = serde_json::from_str(&format!("\"{}\"", form.operator)).unwrap();
+
+        // Parse left operand
+        let left = if form.left_type == "field" {
+            let field: Field =
+                serde_json::from_str(&format!("\"{}\"", form.left_field.unwrap_or_default()))
+                    .unwrap();
+            Operand::Field { field }
+        } else {
+            Operand::Value {
+                value: form.left_value.unwrap_or_default(),
+            }
+        };
+
+        // Parse right operand
+        let right = if form.right_type == "field" {
+            let field: Field =
+                serde_json::from_str(&format!("\"{}\"", form.right_field.unwrap_or_default()))
+                    .unwrap();
+            Operand::Field { field }
+        } else {
+            Operand::Value {
+                value: form.right_value.unwrap_or_default(),
+            }
+        };
 
         let condition = Condition {
             id: Uuid::new_v4(),
-            field,
+            left,
             operator,
-            value: form.value,
+            right,
         };
 
         let rule_id = rule.id;
@@ -130,6 +157,210 @@ pub async fn delete_condition(Path(condition_id): Path<Uuid>) -> Response {
     } else {
         Html("").into_response()
     }
+}
+
+#[derive(Deserialize)]
+pub struct FieldQuery {
+    field: String,
+}
+
+pub async fn get_operators_for_field(
+    axum::extract::Query(query): axum::extract::Query<FieldQuery>,
+) -> Response {
+    let field_str = &query.field;
+
+    // Parse the field to determine which operators are valid
+    let operators = if let Ok(field) = serde_json::from_str::<Field>(&format!("\"{}\"", field_str))
+    {
+        match field {
+            // Numeric fields: comparison operators
+            Field::TransactionAmount
+            | Field::UserAge
+            | Field::TransactionCount24h
+            | Field::AccountAge => {
+                vec![
+                    Operator::Equals,
+                    Operator::NotEquals,
+                    Operator::GreaterThan,
+                    Operator::LessThan,
+                    Operator::GreaterThanOrEqual,
+                    Operator::LessThanOrEqual,
+                ]
+            }
+            // String fields: equality and contains
+            Field::TransactionCurrency
+            | Field::UserCountry
+            | Field::IpAddress
+            | Field::DeviceFingerprint => {
+                vec![
+                    Operator::Equals,
+                    Operator::NotEquals,
+                    Operator::Contains,
+                    Operator::In,
+                ]
+            }
+        }
+    } else {
+        Operator::all()
+    };
+
+    let options_html = operators
+        .iter()
+        .map(|op| {
+            format!(
+                r#"<option value="{}">{}</option>"#,
+                op.as_str(),
+                op.display_name()
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    let html = format!(
+        r##"<label for="operator">Operator</label>
+<select 
+    id="operator" 
+    name="operator" 
+    required
+    hx-get="/rule/conditions/value-input"
+    hx-target="#value-group"
+    hx-include="[name='field'], [name='operator']">
+    <option value="">Select an operator...</option>
+    {}
+</select>"##,
+        options_html
+    );
+
+    Html(html).into_response()
+}
+
+#[derive(Deserialize)]
+pub struct ValueInputQuery {
+    field: String,
+    operator: String,
+}
+
+pub async fn get_value_input_for_field(
+    axum::extract::Query(query): axum::extract::Query<ValueInputQuery>,
+) -> Response {
+    let field_str = &query.field;
+    let _operator_str = &query.operator;
+
+    // Determine the appropriate input type based on the field
+    let html = if let Ok(field) = serde_json::from_str::<Field>(&format!("\"{}\"", field_str)) {
+        match field {
+            // Numeric fields: number input
+            Field::TransactionAmount
+            | Field::UserAge
+            | Field::TransactionCount24h
+            | Field::AccountAge => r#"<label for="value">Value</label>
+<input 
+    type="number" 
+    id="value" 
+    name="value" 
+    placeholder="Enter a number..."
+    step="any"
+    required>"#
+                .to_string(),
+            // String fields: text input with suggestions
+            Field::TransactionCurrency => r#"<label for="value">Value</label>
+<input 
+    type="text" 
+    id="value" 
+    name="value" 
+    placeholder="e.g., USD, EUR, GBP..."
+    list="currency-suggestions"
+    required>
+<datalist id="currency-suggestions">
+    <option value="USD">
+    <option value="EUR">
+    <option value="GBP">
+    <option value="JPY">
+</datalist>"#
+                .to_string(),
+            Field::UserCountry => r#"<label for="value">Value</label>
+<input 
+    type="text" 
+    id="value" 
+    name="value" 
+    placeholder="e.g., US, GB, FR..."
+    list="country-suggestions"
+    required>
+<datalist id="country-suggestions">
+    <option value="US">
+    <option value="GB">
+    <option value="FR">
+    <option value="DE">
+</datalist>"#
+                .to_string(),
+            // Default: text input
+            _ => r#"<label for="value">Value</label>
+<input 
+    type="text" 
+    id="value" 
+    name="value" 
+    placeholder="Enter value..."
+    required>"#
+                .to_string(),
+        }
+    } else {
+        r#"<label for="value">Value</label>
+<input 
+    type="text" 
+    id="value" 
+    name="value" 
+    placeholder="Select a field first..."
+    required
+    disabled>"#
+            .to_string()
+    };
+
+    Html(html).into_response()
+}
+
+pub async fn get_operand_input(
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Response {
+    let operand_type = params
+        .values()
+        .next()
+        .map(|s| s.as_str())
+        .unwrap_or("field");
+    let side = params
+        .keys()
+        .next()
+        .and_then(|k| k.strip_suffix("_type"))
+        .unwrap_or("left");
+
+    let html = if operand_type == "value" {
+        format!(
+            r##"<input type="text" name="{}_value" placeholder="Enter value..." required>"##,
+            side
+        )
+    } else {
+        let fields = Field::all();
+        let options = fields
+            .iter()
+            .map(|f| {
+                format!(
+                    r#"<option value="{}">{}</option>"#,
+                    f.as_str(),
+                    f.display_name()
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        format!(
+            r##"<select name="{}_field" required>
+    <option value="">Select a field...</option>
+    {}
+</select>"##,
+            side, options
+        )
+    };
+
+    Html(html).into_response()
 }
 
 pub async fn validate_rule() -> Response {

@@ -112,13 +112,30 @@ impl Operator {
     }
 }
 
+/// Represents either a field reference or a literal value
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum Operand {
+    Field { field: Field },
+    Value { value: String },
+}
+
+impl Operand {
+    pub fn display(&self) -> String {
+        match self {
+            Operand::Field { field } => field.display_name().to_string(),
+            Operand::Value { value } => format!("\"{}\"", value),
+        }
+    }
+}
+
 /// A single condition in the rule
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Condition {
     pub id: Uuid,
-    pub field: Field,
+    pub left: Operand,
     pub operator: Operator,
-    pub value: String,
+    pub right: Operand,
 }
 
 /// Logical operator for combining conditions
@@ -175,27 +192,16 @@ impl Rule {
 
         // Validate each condition
         for condition in &self.conditions {
-            if condition.value.is_empty() {
-                errors.push(format!(
-                    "Condition value for {} cannot be empty",
-                    condition.field.display_name()
-                ));
-            }
-
-            // Type-specific validation
-            match condition.field {
-                Field::TransactionAmount
-                | Field::UserAge
-                | Field::TransactionCount24h
-                | Field::AccountAge => {
-                    if condition.value.parse::<f64>().is_err() {
-                        errors.push(format!(
-                            "{} must be a number",
-                            condition.field.display_name()
-                        ));
-                    }
+            // Validate that value operands are not empty
+            if let Operand::Value { value } = &condition.right {
+                if value.is_empty() {
+                    errors.push("Condition value cannot be empty".to_string());
                 }
-                _ => {}
+            }
+            if let Operand::Value { value } = &condition.left {
+                if value.is_empty() {
+                    errors.push("Condition value cannot be empty".to_string());
+                }
             }
         }
 

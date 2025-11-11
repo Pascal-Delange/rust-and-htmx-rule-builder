@@ -1,0 +1,73 @@
+<div class="operand-selector" x-data="{ type: 'field' }">
+    <div class="operand-input-group">
+        <!-- Toggle button -->
+        <button type="button" 
+                @click="type = (type === 'field' ? 'value' : 'field')"
+                class="operand-toggle"
+                :title="type === 'field' ? 'Switch to value' : 'Switch to field'">
+            <span x-show="type === 'field'">📊</span>
+            <span x-show="type === 'value'">✏️</span>
+        </button>
+        
+        <!-- Single input area that morphs -->
+        <div class="operand-input">
+            <!-- Field selector -->
+            <select x-show="type === 'field'" 
+                    name="{{ side }}_field" 
+                    :required="type === 'field'"
+                    x-cloak>
+                <option value="">Select a field...</option>
+                {% for field in fields %}
+                <option value="{{ field.as_str() }}">{{ field.display_name() }}</option>
+                {% endfor %}
+            </select>
+            
+            <!-- Value input -->
+            <input x-show="type === 'value'" 
+                   type="text" 
+                   name="{{ side }}_value" 
+                   placeholder="Enter value..."
+                   :required="type === 'value'"
+                   x-cloak>
+        </div>
+    </div>
+    
+    <!-- Hidden input to track the type for form submission -->
+    <input type="hidden" name="{{ side }}_type" :value="type">
+</div>
+
+<style>
+.operand-input-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.operand-toggle {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s;
+}
+
+.operand-toggle:hover {
+    background: #f0f0f0;
+    transform: scale(1.1);
+}
+
+.operand-input {
+    flex: 1;
+}
+
+.operand-input select,
+.operand-input input {
+    width: 100%;
+}
+
+/* Hide elements before Alpine loads */
+[x-cloak] { display: none !important; }
+</style>
+

@@ -24,6 +24,14 @@ async fn main() {
     let app = Router::new()
         .route("/", get(handlers::index))
         .route("/rule/conditions/new", get(handlers::new_condition_form))
+        .route(
+            "/rule/conditions/operators",
+            get(handlers::get_operators_for_field),
+        )
+        .route(
+            "/rule/conditions/value-input",
+            get(handlers::get_value_input_for_field),
+        )
         .route("/rule/conditions", post(handlers::add_condition))
         .route(
             "/rule/conditions/:condition_id",

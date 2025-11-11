@@ -7,13 +7,9 @@
         
         <div class="form-row">
             <div class="form-group">
-                <label for="field">Field</label>
-                <select id="field" name="field" required>
-                    <option value="">Select a field...</option>
-                    {% for field in fields %}
-                    <option value="{{ field.as_str() }}">{{ field.display_name() }}</option>
-                    {% endfor %}
-                </select>
+                <label>Left Side</label>
+                {% set side = "left" %}
+                {% include "operand_selector.html" %}
             </div>
 
             <div class="form-group">
@@ -27,13 +23,9 @@
             </div>
 
             <div class="form-group">
-                <label for="value">Value</label>
-                <input 
-                    type="text" 
-                    id="value" 
-                    name="value" 
-                    placeholder="Enter value..."
-                    required>
+                <label>Right Side</label>
+                {% set side = "right" %}
+                {% include "operand_selector.html" %}
             </div>
         </div>
 
