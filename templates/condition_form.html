@@ -5,25 +5,28 @@
         hx-target="#rule-container"
         hx-swap="innerHTML">
         
-        <div class="form-row">
+        <div class="form-row" x-data="{ leftFieldType: null }">
             <div class="form-group">
                 <label>Left Side</label>
                 {% set side = "left" %}
                 {% include "operand_selector.html" %}
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="operator-group">
                 <label for="operator">Operator</label>
                 <select id="operator" name="operator" required>
-                    <option value="">Select an operator...</option>
-                    {% for op in operators %}
-                    <option value="{{ op.as_str() }}">{{ op.display_name() }}</option>
-                    {% endfor %}
+                    <option value="">Select left side first...</option>
                 </select>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="right-side-group">
                 <label>Right Side</label>
+                <p class="hint" x-show="leftFieldType === 'number'" x-cloak style="font-size: 0.85em; color: #666; margin-bottom: 0.5rem;">
+                    💡 Tip: Use a number value or another numeric field
+                </p>
+                <p class="hint" x-show="leftFieldType === 'string'" x-cloak style="font-size: 0.85em; color: #666; margin-bottom: 0.5rem;">
+                    💡 Tip: Use a text value or another text field
+                </p>
                 {% set side = "right" %}
                 {% include "operand_selector.html" %}
             </div>

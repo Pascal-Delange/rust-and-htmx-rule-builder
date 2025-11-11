@@ -15,20 +15,57 @@
             <select x-show="type === 'field'" 
                     name="{{ side }}_field" 
                     :required="type === 'field'"
-                    x-cloak>
+                    :disabled="type !== 'field'"
+                    x-cloak
+                    {% if side == "left" %}
+                    hx-get="/rule/conditions/operators-and-right"
+                    hx-target="#operator-group"
+                    hx-swap="innerHTML"
+                    hx-include="[name='left_type'], [name='left_field']"
+                    @change="
+                        const numericFields = ['transaction_amount', 'user_age', 'transaction_count24h', 'account_age'];
+                        leftFieldType = numericFields.includes($event.target.value) ? 'number' : 'string';
+                    "
+                    {% endif %}>
                 <option value="">Select a field...</option>
                 {% for field in fields %}
-                <option value="{{ field.as_str() }}">{{ field.display_name() }}</option>
+                <option value="{{ field.as_str() }}"
+                        {% if side == "right" %}
+                        x-show="!leftFieldType || 
+                                (leftFieldType === 'number' && ['transaction_amount', 'user_age', 'transaction_count24h', 'account_age'].includes('{{ field.as_str() }}')) ||
+                                (leftFieldType === 'string' && !['transaction_amount', 'user_age', 'transaction_count24h', 'account_age'].includes('{{ field.as_str() }}'))"
+                        {% endif %}>
+                    {{ field.display_name() }}
+                </option>
                 {% endfor %}
             </select>
             
-            <!-- Value input -->
+            <!-- Value input (adapts based on left field type for right side) -->
+            {% if side == "right" %}
+            <input x-show="type === 'value' && leftFieldType === 'number'" 
+                   type="number" 
+                   name="{{ side }}_value" 
+                   placeholder="Enter a number..."
+                   step="any"
+                   :required="type === 'value' && leftFieldType === 'number'"
+                   :disabled="type !== 'value' || leftFieldType !== 'number'"
+                   x-cloak>
+            <input x-show="type === 'value' && leftFieldType !== 'number'" 
+                   type="text" 
+                   name="{{ side }}_value" 
+                   placeholder="Enter value..."
+                   :required="type === 'value' && leftFieldType !== 'number'"
+                   :disabled="type !== 'value' || leftFieldType === 'number'"
+                   x-cloak>
+            {% else %}
             <input x-show="type === 'value'" 
                    type="text" 
                    name="{{ side }}_value" 
                    placeholder="Enter value..."
                    :required="type === 'value'"
+                   :disabled="type !== 'value'"
                    x-cloak>
+            {% endif %}
         </div>
     </div>
     

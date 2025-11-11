@@ -37,7 +37,6 @@ struct RuleViewTemplate {
 #[template(path = "condition_form.html")]
 struct ConditionFormTemplate {
     fields: Vec<Field>,
-    operators: Vec<Operator>,
 }
 
 #[derive(Template)]
@@ -67,7 +66,6 @@ pub async fn index() -> impl IntoResponse {
 pub async fn new_condition_form() -> impl IntoResponse {
     let template = ConditionFormTemplate {
         fields: Field::all(),
-        operators: Operator::all(),
     };
     HtmlTemplate(template).into_response()
 }
@@ -318,47 +316,73 @@ pub async fn get_value_input_for_field(
     Html(html).into_response()
 }
 
-pub async fn get_operand_input(
+pub async fn get_operators_and_right_hint(
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Response {
-    let operand_type = params
-        .values()
-        .next()
+    let left_type = params
+        .get("left_type")
         .map(|s| s.as_str())
         .unwrap_or("field");
-    let side = params
-        .keys()
-        .next()
-        .and_then(|k| k.strip_suffix("_type"))
-        .unwrap_or("left");
+    let left_field_str = params.get("left_field").map(|s| s.as_str()).unwrap_or("");
 
-    let html = if operand_type == "value" {
-        format!(
-            r##"<input type="text" name="{}_value" placeholder="Enter value..." required>"##,
-            side
-        )
+    // Determine operators based on left side
+    let operators = if left_type == "field" && !left_field_str.is_empty() {
+        if let Ok(field) = serde_json::from_str::<Field>(&format!("\"{}\"", left_field_str)) {
+            match field {
+                // Numeric fields: comparison operators
+                Field::TransactionAmount
+                | Field::UserAge
+                | Field::TransactionCount24h
+                | Field::AccountAge => {
+                    vec![
+                        Operator::Equals,
+                        Operator::NotEquals,
+                        Operator::GreaterThan,
+                        Operator::LessThan,
+                        Operator::GreaterThanOrEqual,
+                        Operator::LessThanOrEqual,
+                    ]
+                }
+                // String fields: equality and contains
+                Field::TransactionCurrency
+                | Field::UserCountry
+                | Field::IpAddress
+                | Field::DeviceFingerprint => {
+                    vec![
+                        Operator::Equals,
+                        Operator::NotEquals,
+                        Operator::Contains,
+                        Operator::In,
+                    ]
+                }
+            }
+        } else {
+            Operator::all()
+        }
     } else {
-        let fields = Field::all();
-        let options = fields
-            .iter()
-            .map(|f| {
-                format!(
-                    r#"<option value="{}">{}</option>"#,
-                    f.as_str(),
-                    f.display_name()
-                )
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
+        Operator::all()
+    };
 
-        format!(
-            r##"<select name="{}_field" required>
-    <option value="">Select a field...</option>
+    let options_html = operators
+        .iter()
+        .map(|op| {
+            format!(
+                r#"<option value="{}">{}</option>"#,
+                op.as_str(),
+                op.display_name()
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    let html = format!(
+        r##"<label for="operator">Operator</label>
+<select id="operator" name="operator" required>
+    <option value="">Select an operator...</option>
     {}
 </select>"##,
-            side, options
-        )
-    };
+        options_html
+    );
 
     Html(html).into_response()
 }

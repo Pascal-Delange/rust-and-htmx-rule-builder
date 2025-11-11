@@ -32,6 +32,10 @@ async fn main() {
             "/rule/conditions/value-input",
             get(handlers::get_value_input_for_field),
         )
+        .route(
+            "/rule/conditions/operators-and-right",
+            get(handlers::get_operators_and_right_hint),
+        )
         .route("/rule/conditions", post(handlers::add_condition))
         .route(
             "/rule/conditions/:condition_id",
