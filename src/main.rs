@@ -36,6 +36,10 @@ async fn main() {
             "/rule/conditions/operators-and-right",
             get(handlers::get_operators_and_right_hint),
         )
+        .route(
+            "/rule/conditions/operators-for-value",
+            get(handlers::get_operators_for_value),
+        )
         .route("/rule/conditions", post(handlers::add_condition))
         .route(
             "/rule/conditions/:condition_id",

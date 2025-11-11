@@ -64,7 +64,24 @@
                    placeholder="Enter value..."
                    :required="type === 'value'"
                    :disabled="type !== 'value'"
-                   x-cloak>
+                   x-cloak
+                   {% if side == "left" %}
+                   hx-get="/rule/conditions/operators-for-value"
+                   hx-target="#operator-group"
+                   hx-swap="innerHTML"
+                   hx-trigger="input changed delay:200ms"
+                   hx-include="[name='left_type'], [name='left_value']"
+                   @input="
+                       const val = $event.target.value;
+                       if (val === '') {
+                           leftFieldType = null;
+                       } else if (!isNaN(val) && val.trim() !== '') {
+                           leftFieldType = 'number';
+                       } else {
+                           leftFieldType = 'string';
+                       }
+                   "
+                   {% endif %}>
             {% endif %}
         </div>
     </div>

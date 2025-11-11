@@ -387,6 +387,58 @@ pub async fn get_operators_and_right_hint(
     Html(html).into_response()
 }
 
+pub async fn get_operators_for_value(
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Response {
+    let left_value = params.get("left_value").map(|s| s.as_str()).unwrap_or("");
+
+    // Determine if the value is numeric or string
+    let is_numeric = !left_value.is_empty() && left_value.parse::<f64>().is_ok();
+
+    let operators = if is_numeric {
+        // Numeric value: comparison operators
+        vec![
+            Operator::Equals,
+            Operator::NotEquals,
+            Operator::GreaterThan,
+            Operator::LessThan,
+            Operator::GreaterThanOrEqual,
+            Operator::LessThanOrEqual,
+        ]
+    } else {
+        // String value: equality and contains
+        vec![
+            Operator::Equals,
+            Operator::NotEquals,
+            Operator::Contains,
+            Operator::In,
+        ]
+    };
+
+    let options_html = operators
+        .iter()
+        .map(|op| {
+            format!(
+                r#"<option value="{}">{}</option>"#,
+                op.as_str(),
+                op.display_name()
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    let html = format!(
+        r##"<label for="operator">Operator</label>
+<select id="operator" name="operator" required>
+    <option value="">Select an operator...</option>
+    {}
+</select>"##,
+        options_html
+    );
+
+    Html(html).into_response()
+}
+
 pub async fn validate_rule() -> Response {
     let store = get_store();
 
