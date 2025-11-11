@@ -36,16 +36,8 @@ struct RuleViewTemplate {
 #[derive(Template)]
 #[template(path = "condition_form.html")]
 struct ConditionFormTemplate {
-    rule_id: Uuid,
     fields: Vec<Field>,
     operators: Vec<Operator>,
-}
-
-#[derive(Template)]
-#[template(path = "condition_row.html")]
-struct ConditionRowTemplate {
-    rule_id: Uuid,
-    condition: Condition,
 }
 
 #[derive(Template)]
@@ -73,17 +65,11 @@ pub async fn index() -> impl IntoResponse {
 }
 
 pub async fn new_condition_form() -> impl IntoResponse {
-    let store = get_store();
-    if let Some(rule) = store.get_rule() {
-        let template = ConditionFormTemplate {
-            rule_id: rule.id,
-            fields: Field::all(),
-            operators: Operator::all(),
-        };
-        HtmlTemplate(template).into_response()
-    } else {
-        Html("<div>Rule not found</div>".to_string()).into_response()
-    }
+    let template = ConditionFormTemplate {
+        fields: Field::all(),
+        operators: Operator::all(),
+    };
+    HtmlTemplate(template).into_response()
 }
 
 #[derive(Deserialize)]
@@ -143,22 +129,6 @@ pub async fn delete_condition(Path(condition_id): Path<Uuid>) -> Response {
         HtmlTemplate(template).into_response()
     } else {
         Html("").into_response()
-    }
-}
-
-pub async fn view_rule() -> Response {
-    let store = get_store();
-    if let Some(rule) = store.get_rule() {
-        let rule_id = rule.id;
-        let rule_json = serde_json::to_string_pretty(&rule).unwrap_or_else(|_| "{}".to_string());
-        let template = RuleViewTemplate {
-            rule,
-            rule_id,
-            rule_json,
-        };
-        HtmlTemplate(template).into_response()
-    } else {
-        Html("<div>Rule not found</div>".to_string()).into_response()
     }
 }
 
