@@ -1,0 +1,16 @@
+<div class="condition-row" id="condition-{{ condition.id }}">
+    <div class="condition-content">
+        <span class="condition-field">{{ condition.field.display_name() }}</span>
+        <span class="condition-operator">{{ condition.operator.display_name() }}</span>
+        <span class="condition-value">"{{ condition.value }}"</span>
+    </div>
+    <button 
+        class="btn-delete"
+        hx-delete="/rule/conditions/{{ condition.id }}"
+        hx-target="#condition-{{ condition.id }}"
+        hx-swap="outerHTML"
+        hx-confirm="Are you sure you want to delete this condition?">
+        ✕
+    </button>
+</div>
+

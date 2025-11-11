@@ -1,0 +1,49 @@
+<div class="card condition-form">
+    <h4>Add Condition</h4>
+    <form 
+        hx-post="/rule/conditions"
+        hx-target="#conditions-list-{{ rule_id }}"
+        hx-swap="beforeend"
+        hx-on::after-request="if(event.detail.successful) this.closest('.card').remove()">
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="field">Field</label>
+                <select id="field" name="field" required>
+                    <option value="">Select a field...</option>
+                    {% for field in fields %}
+                    <option value="{{ field.as_str() }}">{{ field.display_name() }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="operator">Operator</label>
+                <select id="operator" name="operator" required>
+                    <option value="">Select an operator...</option>
+                    {% for op in operators %}
+                    <option value="{{ op.as_str() }}">{{ op.display_name() }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="value">Value</label>
+                <input 
+                    type="text" 
+                    id="value" 
+                    name="value" 
+                    placeholder="Enter value..."
+                    required>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Add Condition</button>
+            <button type="button" class="btn btn-secondary" onclick="this.closest('.card').innerHTML = ''">
+                Cancel
+            </button>
+        </div>
+    </form>
+</div>
+

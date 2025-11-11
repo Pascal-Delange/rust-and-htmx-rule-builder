@@ -1,0 +1,32 @@
+<div class="card">
+    <h3>Create New Rule</h3>
+    <form hx-post="/rules" hx-target="#rules-list" hx-swap="innerHTML">
+        <div class="form-group">
+            <label for="name">Rule Name</label>
+            <input 
+                type="text" 
+                id="name" 
+                name="name" 
+                placeholder="e.g., High Risk Transaction"
+                required>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea 
+                id="description" 
+                name="description" 
+                rows="3"
+                placeholder="Describe what this rule detects..."
+                required></textarea>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create Rule</button>
+            <button type="button" class="btn btn-secondary" onclick="this.closest('.card').innerHTML = ''">
+                Cancel
+            </button>
+        </div>
+    </form>
+</div>
+
