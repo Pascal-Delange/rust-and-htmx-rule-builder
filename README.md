@@ -1,5 +1,16 @@
 # HTMX Rule Builder
 
+## Foreword
+
+This repository is a bit of an experimentation I ran over two evenings (mostly). I had wanted for a while to try three unrelated things:
+
+- write some Rust code
+- build a small app using HTMX
+- see how far I can bootstrap an app using mostly cursor prompting
+  This rule builder, inspired from an interview exercise we run, was just a pretext to do this.
+
+An overwhelming majority of the code within has been generated not written manually, do not judge me too harshly it's just an experimentation.
+
 A fraud detection rule builder built with Rust and HTMX. This project demonstrates building an AST-based rule engine with a dynamic, server-rendered UI.
 
 ## Features
