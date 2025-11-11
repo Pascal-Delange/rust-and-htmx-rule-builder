@@ -2,9 +2,8 @@
     <h4>Add Condition</h4>
     <form 
         hx-post="/rule/conditions"
-        hx-target="#conditions-list-{{ rule_id }}"
-        hx-swap="beforeend"
-        hx-on::after-request="if(event.detail.successful) this.closest('.card').remove()">
+        hx-target="#rule-container"
+        hx-swap="innerHTML">
         
         <div class="form-row">
             <div class="form-group">

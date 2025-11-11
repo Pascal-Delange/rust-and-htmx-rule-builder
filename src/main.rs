@@ -30,7 +30,6 @@ async fn main() {
             axum::routing::delete(handlers::delete_condition),
         )
         .route("/rule/validate", post(handlers::validate_rule))
-        .route("/rule/ast", get(handlers::get_ast))
         .nest_service("/static", ServeDir::new("static"))
         .layer(TraceLayer::new_for_http());
 

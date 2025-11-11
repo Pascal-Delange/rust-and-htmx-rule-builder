@@ -1,4 +1,4 @@
-<div class="rule-details-expanded">
+<div class="rule-details-expanded" id="rule-container">
     <div class="detail-header">
         <h2>{{ rule.name }}</h2>
         <p>{{ rule.description }}</p>
@@ -39,11 +39,7 @@
 
     <div class="ast-preview">
         <h5>AST Preview (JSON)</h5>
-        <div 
-            id="ast-preview-{{ rule_id }}"
-            hx-get="/rule/ast"
-            hx-trigger="conditionChanged from:body"
-            hx-swap="innerHTML">
+        <div id="ast-preview-{{ rule_id }}">
             <pre><code>{{ rule_json }}</code></pre>
         </div>
     </div>

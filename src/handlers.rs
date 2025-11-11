@@ -109,15 +109,17 @@ pub async fn add_condition(Form(form): Form<AddConditionForm>) -> Response {
 
         let rule_id = rule.id;
         rule.conditions.push(condition.clone());
-        store.update_rule(rule);
+        store.update_rule(rule.clone());
 
-        let template = ConditionRowTemplate { rule_id, condition };
-
-        // Trigger the conditionChanged event to update the AST preview
-        axum::response::Response::builder()
-            .header("HX-Trigger", "conditionChanged")
-            .body(HtmlTemplate(template).into_response().into_body())
-            .unwrap()
+        // Simple approach: Re-render the entire rule view
+        // This is the HTMX best practice for most cases
+        let rule_json = serde_json::to_string_pretty(&rule).unwrap_or_else(|_| "{}".to_string());
+        let template = RuleViewTemplate {
+            rule,
+            rule_id,
+            rule_json,
+        };
+        HtmlTemplate(template).into_response()
     } else {
         Html("<div>Rule not found</div>".to_string()).into_response()
     }
@@ -127,15 +129,21 @@ pub async fn delete_condition(Path(condition_id): Path<Uuid>) -> Response {
     let store = get_store();
 
     if let Some(mut rule) = store.get_rule() {
+        let rule_id = rule.id;
         rule.conditions.retain(|c| c.id != condition_id);
-        store.update_rule(rule);
-    }
+        store.update_rule(rule.clone());
 
-    // Return empty response with event trigger to update AST preview
-    axum::response::Response::builder()
-        .header("HX-Trigger", "conditionChanged")
-        .body(Html("").into_response().into_body())
-        .unwrap()
+        // Simple approach: Re-render the entire rule view
+        let rule_json = serde_json::to_string_pretty(&rule).unwrap_or_else(|_| "{}".to_string());
+        let template = RuleViewTemplate {
+            rule,
+            rule_id,
+            rule_json,
+        };
+        HtmlTemplate(template).into_response()
+    } else {
+        Html("").into_response()
+    }
 }
 
 pub async fn view_rule() -> Response {
@@ -172,17 +180,6 @@ pub async fn validate_rule() -> Response {
         HtmlTemplate(template).into_response()
     } else {
         Html("<div>Rule not found</div>".to_string()).into_response()
-    }
-}
-
-pub async fn get_ast() -> Response {
-    let store = get_store();
-
-    if let Some(rule) = store.get_rule() {
-        let rule_json = serde_json::to_string_pretty(&rule).unwrap_or_else(|_| "{}".to_string());
-        Html(format!("<pre><code>{}</code></pre>", rule_json)).into_response()
-    } else {
-        Html("<pre><code>{}</code></pre>".to_string()).into_response()
     }
 }
 
